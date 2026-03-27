@@ -1,19 +1,28 @@
-import React, { useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { fetchMarketData } from '../features/market/marketSlice';
-import { fetchUserStats } from '../features/users/userSlice';
-import { selectTotalRevenue, selectVisibleProducts } from '../selectors/revenueSelectors';
-import FilterPanel from '../components/FilterPanel';
-import MetricCard from '../components/widgets/MetricCard';
-import TrendChart from '../components/charts/TrendChart';
-import ProductTable from '../components/ProductTable';
-import { DollarSign, ShoppingBag, Users, TrendingUp } from 'lucide-react';
+import React, { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "../hooks/redux";
+import { fetchMarketData } from "../features/market/marketSlice";
+import { fetchUserStats } from "../features/users/userSlice";
+import {
+  selectTotalRevenue,
+  selectVisibleProducts,
+} from "../selectors/revenueSelectors";
+import FilterPanel from "../components/FilterPanel";
+import MetricCard from "../components/widgets/MetricCard";
+import TrendChart from "../components/charts/TrendChart";
+import ProductTable from "../components/ProductTable";
+import { DollarSign, ShoppingBag, Users, TrendingUp } from "lucide-react";
 
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
-  const { loading: productsLoading } = useAppSelector(state => state.products);
-  const { prices, loading: marketLoading } = useAppSelector(state => state.market);
-  const { activeUsers, loading: usersLoading } = useAppSelector(state => state.users);
+  const { loading: productsLoading } = useAppSelector(
+    (state) => state.products,
+  );
+  const { prices, loading: marketLoading } = useAppSelector(
+    (state) => state.market,
+  );
+  const { activeUsers, loading: usersLoading } = useAppSelector(
+    (state) => state.users,
+  );
   const totalRevenue = useAppSelector(selectTotalRevenue);
   const visibleProducts = useAppSelector(selectVisibleProducts);
 
@@ -25,10 +34,13 @@ const DashboardPage = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Market Intelligence Overview</h1>
-        <p className="text-slate-500">Real-time performance and market trends</p>
+        <h1 className="text-2xl font-bold text-slate-900">
+          Market Intelligence Overview
+        </h1>
+        <p className="text-slate-500">
+          Real-time performance and market trends
+        </p>
       </div>
-
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
@@ -68,12 +80,12 @@ const DashboardPage = () => {
         <TrendChart
           title="Product Sales Trend"
           data={[
-            { name: 'Jan', value: 400 },
-            { name: 'Feb', value: 300 },
-            { name: 'Mar', value: 600 },
-            { name: 'Apr', value: 800 },
-            { name: 'May', value: 500 },
-            { name: 'Jun', value: 900 },
+            { name: "Jan", value: 400 },
+            { name: "Feb", value: 300 },
+            { name: "Mar", value: 600 },
+            { name: "Apr", value: 800 },
+            { name: "May", value: 500 },
+            { name: "Jun", value: 900 },
           ]}
           dataKey="value"
         />
@@ -88,7 +100,9 @@ const DashboardPage = () => {
       <FilterPanel />
 
       <div>
-        <h2 className="text-xl font-bold text-slate-900 mb-4">Product Inventory</h2>
+        <h2 className="text-xl font-bold text-slate-900 mb-4">
+          Product Inventory
+        </h2>
         <ProductTable />
       </div>
     </div>
