@@ -14,23 +14,17 @@ const LaunchList: React.FC = () => {
     dispatch(fetchLaunches());
   }, [dispatch]);
 
-
-  const filterCriteria = { type: filterType, timestamp: Date.now() };
-
   const filteredMissions = useMemo(() => {
-    console.time('filterMissions');
-    const start = performance.now();
-    while (performance.now() - start < 100) { }
-
-    const result = items.filter(l => {
-      if (filterCriteria.type === 'all') return true;
-      return l.success === (filterCriteria.type === 'success');
+    return items.filter((launch) => {
+      if (filterType === 'all') return true;
+      return launch.success === (filterType === 'success');
     });
-    console.timeEnd('filterMissions');
-    return result;
-  }, [items, filterCriteria]);
+  }, [items, filterType]);
 
-  const selectedLaunch = items.find((l: Launch) => l.id === selectedId);
+  const selectedLaunch = useMemo(
+    () => items.find((launch: Launch) => launch.id === selectedId),
+    [items, selectedId]
+  );
 
   return (
     <div className="p-6 bg-slate-50">
@@ -60,7 +54,7 @@ const LaunchList: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="w-full lg:w-80 space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
           {loading && <div className="p-12 text-center text-orange-400 font-mono animate-pulse">INITIATING DATA UPLINK...</div>}
-          {filteredMissions.map((launch) => (
+          {filteredMissions?.map((launch) => (
             <div
               key={launch.id}
               onClick={() => setSelectedId(launch.id)}
@@ -128,7 +122,7 @@ const LaunchList: React.FC = () => {
                   <div>
                     <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Core Inventory</h4>
                     <div className="space-y-2">
-                      {selectedLaunch.cores.map((c, i) => (
+                      {selectedLaunch.cores?.map((c, i) => (
                         <div key={i} className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center">
                           <div>
                             <div className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">Core: {c.core || 'TBD'}</div>
@@ -145,7 +139,7 @@ const LaunchList: React.FC = () => {
                   <div>
                     <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Payload Logistics</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      {selectedLaunch.payloads.map(p => (
+                      {selectedLaunch.payloads?.map(p => (
                         <div key={p} className="bg-white p-2 rounded-lg border border-slate-100 text-[10px] font-bold text-slate-500 text-center uppercase truncate">
                           {p}
                         </div>

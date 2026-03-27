@@ -35,12 +35,12 @@ const userSlice = createSlice({
       .addCase(fetchUserStats.fulfilled, (state, action) => {
         state.loading = false;
         state.activeUsers = Math.floor(Math.random() * 5000) + 1000;
-        state.recentActivity = action.payload.map((user: any) => ({
+        state.recentActivity = Array.isArray(action.payload) ? action.payload.map((user: any) => ({
           id: user.login.uuid,
           user: `${user.name.first} ${user.name.last}`,
           action: ['Purchased Item', 'Logged In', 'Updated Profile', 'Viewed Chart'][Math.floor(Math.random() * 4)],
           time: new Date().toLocaleTimeString(),
-        }));
+        })) : [];
       })
       .addCase(fetchUserStats.rejected, (state, action) => {
         state.loading = false;

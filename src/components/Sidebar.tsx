@@ -15,7 +15,7 @@ const Sidebar = () => {
         <span>MarketIntel</span>
       </div>
       <nav className="flex-1 p-4 space-y-2 mt-4">
-        {menuItems.map((item) => (
+        {menuItems?.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

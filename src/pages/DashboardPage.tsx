@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { fetchProducts, setFilteredProducts } from '../features/products/productSlice';
 import { fetchMarketData } from '../features/market/marketSlice';
 import { fetchUserStats } from '../features/users/userSlice';
-import { selectTotalRevenue } from '../selectors/revenueSelectors';
+import { selectTotalRevenue, selectVisibleProducts } from '../selectors/revenueSelectors';
 import FilterPanel from '../components/FilterPanel';
 import MetricCard from '../components/widgets/MetricCard';
 import TrendChart from '../components/charts/TrendChart';
@@ -12,35 +11,16 @@ import { DollarSign, ShoppingBag, Users, TrendingUp } from 'lucide-react';
 
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
-  const { items, loading: productsLoading } = useAppSelector(state => state.products);
+  const { loading: productsLoading } = useAppSelector(state => state.products);
   const { prices, loading: marketLoading } = useAppSelector(state => state.market);
   const { activeUsers, loading: usersLoading } = useAppSelector(state => state.users);
-  const { category, search } = useAppSelector(state => state.filters);
-  const revenueData = useAppSelector(selectTotalRevenue);
-  const totalRevenue = useMemo(() => {
-    if (Array.isArray(revenueData)) {
-      return revenueData.reduce((acc: number, curr: any) => acc + curr.value, 0);
-    }
-    return 0;
-  }, [revenueData]);
+  const totalRevenue = useAppSelector(selectTotalRevenue);
+  const visibleProducts = useAppSelector(selectVisibleProducts);
 
   useEffect(() => {
-    dispatch(fetchProducts({ limit: 100, skip: 0 }));
     dispatch(fetchMarketData());
     dispatch(fetchUserStats());
   }, [dispatch]);
-
-  useEffect(() => {
-    if (revenueData?.length > 0) {
-      console.log('Syncing metrics state...');
-      dispatch({ type: 'INTERNAL_METRICS_SYNC' });
-    }
-  }, [revenueData, dispatch]);
-
-  useEffect(() => {
-    let filtered = [...items];
-    dispatch(setFilteredProducts(filtered));
-  }, [items, category, search, dispatch]);
 
   return (
     <div className="space-y-8">
@@ -60,7 +40,7 @@ const DashboardPage = () => {
         />
         <MetricCard
           title="Products Sold"
-          value={items?.length * 14}
+          value={visibleProducts.length * 14}
           change={-2.4}
           icon={ShoppingBag}
           color="green"

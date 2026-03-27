@@ -1,23 +1,27 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { fetchProducts, setCurrentPage, sortProducts, setFilteredProducts, Product } from '../features/products/productSlice';
-import { ChevronLeft, ChevronRight, ArrowUpDown, Search } from 'lucide-react';
+import { fetchProducts, setCurrentPage, sortProducts, Product } from '../features/products/productSlice';
+import { ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 
 const ProductTable = () => {
   const dispatch = useAppDispatch();
   const { filteredItems, loading, currentPage, total, limit } = useAppSelector((state) => state.products);
   const { category, search } = useAppSelector((state) => state.filters);
+  const [sortState, setSortState] = useState<{ key: keyof Product; order: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
     const skip = (currentPage - 1) * limit;
     dispatch(fetchProducts({ limit, skip, q: search, category }));
   }, [dispatch, currentPage, limit, search, category]);
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  // Sorting handler
   const handleSort = (key: keyof Product) => {
-    dispatch(sortProducts({ key, order: 'desc' }));
+    const order = sortState?.key === key && sortState.order === 'desc' ? 'asc' : 'desc';
+    const nextSortState = { key, order } as const;
+
+    setSortState(nextSortState);
+    dispatch(sortProducts(nextSortState));
   };
 
   if (loading && filteredItems?.length === 0) {
@@ -44,7 +48,7 @@ const ProductTable = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredItems.map((product) => (
+            {filteredItems?.map((product) => (
               <tr key={product.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
@@ -84,7 +88,7 @@ const ProductTable = () => {
           </button>
           <button
             onClick={() => dispatch(setCurrentPage(Math.min(totalPages, currentPage + 1)))}
-            disabled={currentPage === totalPages}
+            disabled={currentPage >= totalPages || total === 0}
             className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50 transition-all"
           >
             <ChevronRight size={18} />

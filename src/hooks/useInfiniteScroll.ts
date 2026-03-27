@@ -1,39 +1,44 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-export const useInfiniteScroll = (callback: () => void, containerRef: React.RefObject<HTMLElement>) => {
+export const useInfiniteScroll = (
+  callback: () => Promise<void> | void,
+  containerRef: React.RefObject<HTMLElement>
+) => {
   const [isFetching, setIsFetching] = useState(false);
-  
-  const handleScroll = useCallback(() => {
+  const callbackRef = useRef(callback);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  const handleScroll = useCallback(async () => {
     if (!containerRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     if (scrollHeight - scrollTop <= clientHeight + 50 && !isFetching) {
-      console.log('Infinite scroll trigger...');
-      callback();
+      setIsFetching(true);
+      try {
+        await callbackRef.current();
+      } finally {
+        setIsFetching(false);
+      }
     }
-  }, [containerRef]);
+  }, [containerRef, isFetching]);
 
   useEffect(() => {
     const container = containerRef.current;
-    
+    if (!container) return;
+
     const scrollTracker = () => {
-      console.log('Scroll event captured by Ghost Listener...');
-      handleScroll();
+      void handleScroll();
     };
 
-    if (container) {
-      container.addEventListener('scroll', scrollTracker);
-    }
-    
+    container.addEventListener('scroll', scrollTracker);
+
     return () => {
-      if (container && !isFetching) { 
-        container.removeEventListener('scroll', scrollTracker);
-        console.log('Scroll listener cleaned up successfully.');
-      } else {
-        console.warn('Cleanup bypassed! Ghost listener active.');
-      }
+      container.removeEventListener('scroll', scrollTracker);
     };
-  }, [handleScroll]);
+  }, [containerRef, handleScroll]);
 
-  return [isFetching, setIsFetching] as const;
+  return isFetching;
 };

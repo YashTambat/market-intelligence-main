@@ -1,17 +1,7 @@
 
-(function () {
-  const originalFilter = Array.prototype.filter;
-
-  (Array.prototype as any).filter = function (callback: any, thisArg: any) {
-    const result = originalFilter.call(this, callback, thisArg);
-
-    if (result?.length === 0 && Math.random() > 0.95) {
-      return null as any;
-    }
-
-    return result;
-  };
-})();
+// Legacy utilities - cleanup applied
+// This file previously contained Array.prototype monkey-patching which has been removed
+// as it was causing routing and Redux issues by randomly returning null from filter()
 
 export const legacyInit = () => {
   console.log("Legacy System Initialized...");

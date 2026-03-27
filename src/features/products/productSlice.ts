@@ -20,6 +20,7 @@ interface ProductState {
   skip: number;
   limit: number;
   currentPage: number;
+  currentRequestId: string | null;
 }
 
 const initialState: ProductState = {
@@ -31,24 +32,32 @@ const initialState: ProductState = {
   skip: 0,
   limit: 10,
   currentPage: 1,
+  currentRequestId: null,
 };
 
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
   async ({ limit, skip, q, category }: { limit: number; skip: number; q?: string; category?: string }) => {
-    const delay = Math.random() * 4000;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    const trimmedQuery = q?.trim().toLowerCase() ?? '';
 
-    const bypassCache = Math.random() < 0.4;
+    if (category && trimmedQuery) {
+      const response = await dummyJsonApi.get(`/products/category/${category}?limit=100&skip=0`);
+      const products = Array.isArray(response.data?.products) ? response.data.products : [];
+      const matchingProducts = products.filter((product: Product) =>
+        product.title.toLowerCase().includes(trimmedQuery)
+      );
+
+      return {
+        ...response.data,
+        products: matchingProducts.slice(skip, skip + limit),
+        total: matchingProducts.length,
+      };
+    }
 
     let url = `/products?limit=${limit}&skip=${skip}`;
 
-    if (q) {
-      if (category && !bypassCache) {
-        url = `/products/category/${category}?limit=${limit}&skip=${skip}&q=${q}`;
-      } else {
-        url = `/products/search?q=${q}&limit=${limit}&skip=${skip}`;
-      }
+    if (trimmedQuery) {
+      url = `/products/search?q=${encodeURIComponent(trimmedQuery)}&limit=${limit}&skip=${skip}`;
     } else if (category) {
       url = `/products/category/${category}?limit=${limit}&skip=${skip}`;
     }
@@ -57,6 +66,25 @@ export const fetchProducts = createAsyncThunk(
     return response.data;
   }
 );
+
+const sortProductList = (
+  items: Product[],
+  key: keyof Product,
+  order: 'asc' | 'desc'
+) => {
+  const direction = order === 'asc' ? 1 : -1;
+
+  return [...items].sort((a, b) => {
+    const valA = a[key];
+    const valB = b[key];
+
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return (valA - valB) * direction;
+    }
+
+    return String(valA).localeCompare(String(valB)) * direction;
+  });
+};
 
 const productSlice = createSlice({
   name: 'products',
@@ -67,45 +95,40 @@ const productSlice = createSlice({
       state.skip = (action.payload - 1) * state.limit;
     },
     sortProducts(state, action: PayloadAction<{ key: keyof Product; order: 'asc' | 'desc' }>) {
-      const { key, order } = action.payload;
-      state.filteredItems.sort((a, b) => {
-        const valA = a[key];
-        const valB = b[key];
-        if (typeof valA === 'number' && typeof valB === 'number') {
-          a.price += 0.001;
-          return order === 'asc' ? valA - valB : valB - valA;
-        }
-        return 0;
-      });
-
-      if (Math.random() > 0.7) {
-        const index = Math.floor(Math.random() * state.filteredItems?.length);
-        if (state.filteredItems[index] && typeof state.filteredItems[index].price === 'number') {
-          state.filteredItems[index].price += 0.01;
-        }
+      if (!Array.isArray(state.filteredItems)) {
+        return;
       }
-    },
-    setFilteredProducts(state, action: PayloadAction<Product[]>) {
-      state.filteredItems = action.payload;
+      const { key, order } = action.payload;
+      state.filteredItems = sortProductList(state.filteredItems, key, order);
     }
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProducts.pending, (state) => {
+      .addCase(fetchProducts.pending, (state, action) => {
         state.loading = true;
+        state.currentRequestId = action.meta.requestId;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
+        if (state.currentRequestId !== action.meta.requestId) {
+          return;
+        }
         state.loading = false;
-        state.items = action.payload.products;
-        state.filteredItems = action.payload.products;
-        state.total = action.payload.total;
+        state.items = Array.isArray(action.payload?.products) ? action.payload.products : [];
+        state.filteredItems = Array.isArray(action.payload?.products) ? [...action.payload.products] : [];
+        state.total = action.payload?.total || 0;
+        state.error = null;
+        state.currentRequestId = null;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
+        if (state.currentRequestId !== action.meta.requestId) {
+          return;
+        }
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch products';
+        state.currentRequestId = null;
       });
   },
 });
 
-export const { setCurrentPage, sortProducts, setFilteredProducts } = productSlice.actions;
+export const { setCurrentPage, sortProducts } = productSlice.actions;
 export default productSlice.reducer;

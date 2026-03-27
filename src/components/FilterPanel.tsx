@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { setCategory, setSearch } from '../features/filters/filterSlice';
-import { fetchProducts } from '../features/products/productSlice';
+import { setCurrentPage } from '../features/products/productSlice';
 import { dummyJsonApi } from '../services/api';
 
 const FilterPanel = () => {
@@ -9,16 +9,17 @@ const FilterPanel = () => {
   const { category, search } = useAppSelector((state) => state.filters);
   const [localSearch, setLocalSearch] = useState(search);
   const [categories, setCategories] = useState<string[]>([]);
-  
-  const categoryRef = useRef(category);
-  useEffect(() => { categoryRef.current = category; }, [category]);
+
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await dummyJsonApi.get('/products/categories');
         const data = response.data;
-        setCategories(data.map((c: any) => c.slug || c));
+        setCategories(data?.map((c: any) => c.slug || c));
       } catch (error) {
         console.error('Failed to fetch categories', error);
       }
@@ -29,13 +30,13 @@ const FilterPanel = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (localSearch !== search) {
-        dispatch(fetchProducts({ limit: 10, skip: 0, q: localSearch, category: categoryRef.current }));
         dispatch(setSearch(localSearch));
+        dispatch(setCurrentPage(1));
       }
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [localSearch, dispatch]);
+  }, [localSearch, search, dispatch]);
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-6 items-end">
@@ -45,11 +46,14 @@ const FilterPanel = () => {
         </label>
         <select
           value={category}
-          onChange={(e) => dispatch(setCategory(e.target.value))}
+          onChange={(e) => {
+            dispatch(setCategory(e.target.value));
+            dispatch(setCurrentPage(1));
+          }}
           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
         >
           <option value="">All Categories</option>
-          {categories.map((cat) => (
+          {categories?.map((cat) => (
             <option key={cat} value={cat}>
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </option>
@@ -75,6 +79,7 @@ const FilterPanel = () => {
           onClick={() => {
             dispatch(setCategory(''));
             dispatch(setSearch(''));
+            dispatch(setCurrentPage(1));
             setLocalSearch('');
           }}
           className="px-6 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 border border-slate-200 rounded-lg hover:border-blue-200 transition-all font-mono"

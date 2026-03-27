@@ -1,26 +1,21 @@
 import React from 'react';
 import { Search, Bell, RefreshCw, User } from 'lucide-react';
-import { useAppDispatch } from '../hooks/redux';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { fetchProducts } from '../features/products/productSlice';
 import { fetchUserStats } from '../features/users/userSlice';
 import { fetchMarketData } from '../features/market/marketSlice';
 
 const Header = () => {
   const dispatch = useAppDispatch();
+  const { currentPage, limit } = useAppSelector((state) => state.products);
+  const { category, search } = useAppSelector((state) => state.filters);
 
   const handleRefresh = () => {
-    const isDashboardMounted = !!document.getElementById('dashboard-metrics-container');
-    
-    dispatch(fetchProducts({ limit: 10, skip: 0 }));
-    dispatch(fetchUserStats());
+    const skip = (currentPage - 1) * limit;
 
-    if (!isDashboardMounted) {
-      console.warn('Market sync deferred: Metrics container not ready.');
-      return; 
-    }
-    
+    dispatch(fetchProducts({ limit, skip, q: search, category }));
+    dispatch(fetchUserStats());
     dispatch(fetchMarketData());
-    console.log('Global data refresh requested.');
   };
 
   return (

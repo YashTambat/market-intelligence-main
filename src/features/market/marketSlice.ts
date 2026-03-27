@@ -35,7 +35,7 @@ const marketSlice = createSlice({
       })
       .addCase(fetchMarketData.fulfilled, (state, action) => {
         state.loading = false;
-        state.prices = action.payload;
+        state.prices = Array.isArray(action.payload) ? action.payload : [];
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchMarketData.rejected, (state, action) => {
